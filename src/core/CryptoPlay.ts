@@ -2,6 +2,8 @@ import { ethers } from 'ethers';
 import { CryptoPlayWallet } from './Wallet';
 import { ContractManager } from './ContractManager';
 import { EventManager, EventSubscription, NFTMintedEvent, TokenTransferEvent, NFTTransferEvent } from './EventManager';
+import { GameManager, GameScore, GameReward } from './GameManager';
+import { MarketplaceManager, Listing, Offer } from './MarketplaceManager';
 import { GameConfig, NFTMetadata, TransactionResult, GameState, SDKConfig } from '../types';
 
 export class CryptoPlay {
@@ -9,6 +11,8 @@ export class CryptoPlay {
   private config: GameConfig;
   private contractManager: ContractManager;
   private eventManager: EventManager;
+  private gameManager: GameManager;
+  private marketplaceManager: MarketplaceManager;
   private contracts: {
     tokenAddress: string;
     nftAddress: string;
@@ -19,6 +23,8 @@ export class CryptoPlay {
     this.config = config.config;
     this.contractManager = new ContractManager(this.wallet, this.config);
     this.eventManager = new EventManager(this.contractManager);
+    this.gameManager = new GameManager(this.contractManager);
+    this.marketplaceManager = new MarketplaceManager(this.contractManager);
   }
 
   async initialize(): Promise<void> {
@@ -106,5 +112,93 @@ export class CryptoPlay {
 
   getContractAddresses(): { tokenAddress: string; nftAddress: string } | null {
     return this.contracts;
+  }
+
+  // Game Management Methods
+  async recordScore(score: number, gameId: string): Promise<void> {
+    return this.gameManager.recordScore(this.wallet.address, score, gameId);
+  }
+
+  async getPlayerScores(): Promise<GameScore[]> {
+    return this.gameManager.getPlayerScores(this.wallet.address);
+  }
+
+  async getLeaderboard(gameId: string, limit?: number): Promise<GameScore[]> {
+    return this.gameManager.getLeaderboard(gameId, limit);
+  }
+
+  async distributeReward(reward: GameReward): Promise<TransactionResult> {
+    return this.gameManager.distributeReward(this.wallet.address, reward);
+  }
+
+  async getPlayerRewards(): Promise<GameReward[]> {
+    return this.gameManager.getPlayerRewards(this.wallet.address);
+  }
+
+  async calculatePlayerRank(gameId: string): Promise<number> {
+    return this.gameManager.calculatePlayerRank(this.wallet.address, gameId);
+  }
+
+  async getPlayerStats(): Promise<{
+    totalGames: number;
+    averageScore: number;
+    highestScore: number;
+    totalRewards: number;
+  }> {
+    return this.gameManager.getPlayerStats(this.wallet.address);
+  }
+
+  // Marketplace Methods
+  async createListing(tokenId: number, price: string): Promise<void> {
+    return this.marketplaceManager.createListing(
+      tokenId,
+      price,
+      this.wallet.address
+    );
+  }
+
+  async cancelListing(tokenId: number): Promise<void> {
+    return this.marketplaceManager.cancelListing(tokenId);
+  }
+
+  async buyNFT(tokenId: number): Promise<TransactionResult> {
+    return this.marketplaceManager.buyNFT(tokenId, this.wallet.address);
+  }
+
+  async createOffer(tokenId: number, price: string): Promise<void> {
+    return this.marketplaceManager.createOffer(
+      tokenId,
+      price,
+      this.wallet.address
+    );
+  }
+
+  async acceptOffer(tokenId: number, buyer: string): Promise<TransactionResult> {
+    return this.marketplaceManager.acceptOffer(tokenId, buyer);
+  }
+
+  async rejectOffer(tokenId: number, buyer: string): Promise<void> {
+    return this.marketplaceManager.rejectOffer(tokenId, buyer);
+  }
+
+  async getActiveListings(): Promise<Listing[]> {
+    return this.marketplaceManager.getActiveListings();
+  }
+
+  async getTokenOffers(tokenId: number): Promise<Offer[]> {
+    return this.marketplaceManager.getTokenOffers(tokenId);
+  }
+
+  async getListingDetails(tokenId: number): Promise<Listing | null> {
+    return this.marketplaceManager.getListingDetails(tokenId);
+  }
+
+  async getMarketplaceStats(): Promise<{
+    totalListings: number;
+    activeListings: number;
+    totalSales: number;
+    totalVolume: string;
+  }> {
+    return this.marketplaceManager.getMarketplaceStats();
   }
 } 

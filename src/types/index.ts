@@ -86,4 +86,34 @@ export interface NFTTransferEvent {
   tokenId: number;
   blockNumber: number;
   transactionHash: string;
+}
+
+export interface GameScore {
+  playerAddress: string;
+  score: number;
+  timestamp: number;
+  gameId: string;
+}
+
+export interface GameReward {
+  type: 'token' | 'nft';
+  amount?: string;
+  nftMetadata?: NFTMetadata;
+  gameId: string;
+}
+
+export interface Listing {
+  tokenId: number;
+  seller: string;
+  price: string;
+  timestamp: number;
+  status: 'active' | 'sold' | 'cancelled';
+}
+
+export interface Offer {
+  tokenId: number;
+  buyer: string;
+  price: string;
+  timestamp: number;
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
 } 
