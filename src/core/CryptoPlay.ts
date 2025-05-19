@@ -1,69 +1,47 @@
 import { ethers } from 'ethers';
 import { CryptoPlayWallet } from './Wallet';
+import { ContractManager } from './ContractManager';
+import { EventManager, EventSubscription, NFTMintedEvent, TokenTransferEvent, NFTTransferEvent } from './EventManager';
 import { GameConfig, NFTMetadata, TransactionResult, GameState, SDKConfig } from '../types';
 
 export class CryptoPlay {
   private wallet: CryptoPlayWallet;
   private config: GameConfig;
-  private tokenContract: ethers.Contract | null = null;
-  private nftContract: ethers.Contract | null = null;
+  private contractManager: ContractManager;
+  private eventManager: EventManager;
+  private contracts: {
+    tokenAddress: string;
+    nftAddress: string;
+  } | null = null;
 
   constructor(config: SDKConfig) {
     this.wallet = new CryptoPlayWallet(config.wallet);
     this.config = config.config;
+    this.contractManager = new ContractManager(this.wallet, this.config);
+    this.eventManager = new EventManager(this.contractManager);
   }
 
   async initialize(): Promise<void> {
     await this.wallet.connect();
-    await this.deployContracts();
-  }
-
-  private async deployContracts(): Promise<void> {
-    // Deploy token contract
-    const tokenFactory = new ethers.ContractFactory(
-      ['function mint(address to, uint256 amount)'],
-      this.config.token.initialSupply,
-      this.wallet.getSigner()
-    );
-    this.tokenContract = await tokenFactory.deploy();
-
-    // Deploy NFT contract
-    const nftFactory = new ethers.ContractFactory(
-      ['function mint(address to, string memory uri)'],
-      this.config.nft.baseURI,
-      this.wallet.getSigner()
-    );
-    this.nftContract = await nftFactory.deploy();
+    this.contracts = await this.contractManager.deployContracts();
   }
 
   async mintNFT(metadata: NFTMetadata): Promise<TransactionResult> {
-    if (!this.nftContract) {
-      throw new Error('NFT contract not deployed');
-    }
+    return this.contractManager.mintNFT(metadata);
+  }
 
-    try {
-      const tx = await this.nftContract.mint(
-        this.wallet.address,
-        JSON.stringify(metadata)
-      );
-      const receipt = await tx.wait();
+  async transferToken(to: string, amount: string): Promise<TransactionResult> {
+    return this.contractManager.transferToken(to, amount);
+  }
 
-      return {
-        hash: receipt.transactionHash,
-        blockNumber: receipt.blockNumber,
-        from: receipt.from,
-        to: receipt.to,
-        status: receipt.status === 1
-      };
-    } catch (error) {
-      throw new Error(`Failed to mint NFT: ${error.message}`);
-    }
+  async approveToken(spender: string, amount: string): Promise<TransactionResult> {
+    return this.contractManager.approveToken(spender, amount);
   }
 
   async getGameState(): Promise<GameState> {
     const balance = await this.wallet.getBalance();
-    const tokenBalance = await this.getTokenBalance();
-    const nfts = await this.getNFTs();
+    const tokenBalance = await this.contractManager.getTokenBalance(this.wallet.address);
+    const nfts = await this.contractManager.getNFTsByOwner(this.wallet.address);
 
     return {
       wallet: {
@@ -78,37 +56,55 @@ export class CryptoPlay {
     };
   }
 
-  private async getTokenBalance(): Promise<string> {
-    if (!this.tokenContract) {
-      throw new Error('Token contract not deployed');
-    }
-
-    const balance = await this.tokenContract.balanceOf(this.wallet.address);
-    return ethers.utils.formatEther(balance);
+  async getNFTBalance(address: string): Promise<number> {
+    return this.contractManager.getNFTBalance(address);
   }
 
-  private async getNFTs(): Promise<Array<{ id: number; metadata: NFTMetadata }>> {
-    if (!this.nftContract) {
-      throw new Error('NFT contract not deployed');
-    }
+  async getNFTMetadata(tokenId: number): Promise<NFTMetadata> {
+    return this.contractManager.getNFTMetadata(tokenId);
+  }
 
-    const balance = await this.nftContract.balanceOf(this.wallet.address);
-    const nfts = [];
+  async getNFTsByOwner(address: string): Promise<Array<{ id: number; metadata: NFTMetadata }>> {
+    return this.contractManager.getNFTsByOwner(address);
+  }
 
-    for (let i = 0; i < balance.toNumber(); i++) {
-      const tokenId = await this.nftContract.tokenOfOwnerByIndex(
-        this.wallet.address,
-        i
-      );
-      const uri = await this.nftContract.tokenURI(tokenId);
-      const metadata = JSON.parse(uri) as NFTMetadata;
+  async transferNFT(to: string, tokenId: number): Promise<TransactionResult> {
+    return this.contractManager.transferNFT(to, tokenId);
+  }
 
-      nfts.push({
-        id: tokenId.toNumber(),
-        metadata
-      });
-    }
+  async approveNFT(operator: string, tokenId: number): Promise<TransactionResult> {
+    return this.contractManager.approveNFT(operator, tokenId);
+  }
 
-    return nfts;
+  async setApprovalForAll(operator: string, approved: boolean): Promise<TransactionResult> {
+    return this.contractManager.setApprovalForAll(operator, approved);
+  }
+
+  onNFTMinted(callback: (event: NFTMintedEvent) => void): EventSubscription {
+    return this.eventManager.onNFTMinted(callback);
+  }
+
+  onTokenTransfer(callback: (event: TokenTransferEvent) => void): EventSubscription {
+    return this.eventManager.onTokenTransfer(callback);
+  }
+
+  onNFTTransfer(callback: (event: NFTTransferEvent) => void): EventSubscription {
+    return this.eventManager.onNFTTransfer(callback);
+  }
+
+  async getPastNFTMints(fromBlock: number, toBlock: number): Promise<NFTMintedEvent[]> {
+    return this.eventManager.getPastNFTMints(fromBlock, toBlock);
+  }
+
+  async getPastTokenTransfers(fromBlock: number, toBlock: number): Promise<TokenTransferEvent[]> {
+    return this.eventManager.getPastTokenTransfers(fromBlock, toBlock);
+  }
+
+  async getPastNFTTransfers(fromBlock: number, toBlock: number): Promise<NFTTransferEvent[]> {
+    return this.eventManager.getPastNFTTransfers(fromBlock, toBlock);
+  }
+
+  getContractAddresses(): { tokenAddress: string; nftAddress: string } | null {
+    return this.contracts;
   }
 } 

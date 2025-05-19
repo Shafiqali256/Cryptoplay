@@ -15,6 +15,14 @@ export class ContractManager {
     this.config = config;
   }
 
+  getTokenContract(): ethers.Contract | null {
+    return this.tokenContract;
+  }
+
+  getNFTContract(): ethers.Contract | null {
+    return this.nftContract;
+  }
+
   async deployContracts(): Promise<{
     tokenAddress: string;
     nftAddress: string;

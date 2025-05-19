@@ -58,4 +58,32 @@ export interface GameState {
 export interface SDKConfig {
   wallet: WalletConfig;
   config: GameConfig;
+}
+
+export interface EventSubscription {
+  unsubscribe: () => void;
+}
+
+export interface NFTMintedEvent {
+  tokenId: number;
+  owner: string;
+  metadata: NFTMetadata;
+  blockNumber: number;
+  transactionHash: string;
+}
+
+export interface TokenTransferEvent {
+  from: string;
+  to: string;
+  amount: string;
+  blockNumber: number;
+  transactionHash: string;
+}
+
+export interface NFTTransferEvent {
+  from: string;
+  to: string;
+  tokenId: number;
+  blockNumber: number;
+  transactionHash: string;
 } 
