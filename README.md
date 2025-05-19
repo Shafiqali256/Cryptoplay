@@ -1,167 +1,169 @@
 # CryptoPlay SDK
 
-A comprehensive SDK for blockchain gaming integration, providing easy-to-use tools for managing wallets, tokens, and NFTs in your blockchain games.
+A comprehensive SDK for blockchain gaming integration, providing seamless interaction with NFTs, tokens, and game mechanics.
 
 ## Features
 
-- 🔐 Secure wallet management
-- 🎮 Game state tracking
-- 🎨 NFT minting and management
-- 💰 Token integration
-- 📦 TypeScript support
-- 🔄 Real-time blockchain interactions
+### Core Functionality
+- **Wallet Integration**: Secure wallet management with private key support
+- **Smart Contract Interaction**: Deploy and interact with token and NFT contracts
+- **Event Management**: Real-time event subscriptions and historical event queries
+- **Type Safety**: Full TypeScript support with comprehensive type definitions
+
+### Game Management
+- **Score Tracking**: Record and manage player scores
+- **Leaderboards**: Create and query game-specific leaderboards
+- **Player Statistics**: Track player performance and achievements
+- **Reward System**: Distribute tokens and NFTs as game rewards
+- **Player Rankings**: Calculate and track player rankings
+
+### NFT Marketplace
+- **Listings**: Create and manage NFT listings
+- **Offers**: Make and manage purchase offers
+- **Trading**: Execute NFT sales and transfers
+- **Marketplace Stats**: Track marketplace activity and volume
+- **Price Management**: Set and update NFT prices
+
+### Token Management
+- **Token Transfers**: Send and receive tokens
+- **Token Approvals**: Manage token spending permissions
+- **Balance Tracking**: Monitor token balances
+- **Token Metadata**: Access token information
 
 ## Installation
 
 ```bash
-# Using npm
 npm install cryptoplay-sdk
-
-# Using yarn
-yarn add cryptoplay-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { CryptoPlay, WalletConfig, GameConfig } from 'cryptoplay-sdk';
+import { CryptoPlay, SDKConfig } from 'cryptoplay-sdk';
 
-// Configure your wallet
-const walletConfig: WalletConfig = {
-  privateKey: process.env.PRIVATE_KEY,
-  provider: {
-    network: 'testnet',
-    apiKey: process.env.INFURA_API_KEY
-  }
-};
-
-// Configure your game
-const gameConfig: GameConfig = {
-  name: "MyGame",
-  description: "Blockchain-powered game",
-  token: {
-    name: "GameToken",
-    symbol: "GTK",
-    initialSupply: "1000000000000000000000000" // 1 million tokens
+// Configure the SDK
+const config: SDKConfig = {
+  wallet: {
+    privateKey: 'your-private-key',
+    provider: {
+      network: 'testnet',
+      apiKey: 'your-api-key'
+    }
   },
-  nft: {
-    name: "GameItems",
-    symbol: "GITM",
-    baseURI: "https://mygame.com/assets/",
-    maxSupply: 10000
+  config: {
+    name: 'MyGame',
+    description: 'An awesome blockchain game',
+    token: {
+      name: 'GameToken',
+      symbol: 'GAME',
+      initialSupply: '1000000'
+    },
+    nft: {
+      name: 'GameNFT',
+      symbol: 'GNFT',
+      baseURI: 'https://api.mygame.com/nfts/',
+      maxSupply: 10000
+    }
   }
 };
 
 // Initialize the SDK
-const game = new CryptoPlay({ wallet: walletConfig, config: gameConfig });
+const cryptoPlay = new CryptoPlay(config);
+await cryptoPlay.initialize();
 
-// Connect and deploy contracts
-await game.initialize();
+// Start using the SDK features
+```
 
-// Mint an NFT
-const nft = await game.mintNFT({
-  name: "Legendary Sword",
-  description: "A powerful weapon",
-  attributes: [
-    { trait_type: "Damage", value: 95 },
-    { trait_type: "Rarity", value: "Legendary" }
-  ]
+## Usage Examples
+
+### Game Management
+
+```typescript
+// Record a player's score
+await cryptoPlay.recordScore(1000, 'game-1');
+
+// Get player statistics
+const stats = await cryptoPlay.getPlayerStats();
+console.log(`Total games: ${stats.totalGames}`);
+console.log(`Average score: ${stats.averageScore}`);
+
+// Get leaderboard
+const leaderboard = await cryptoPlay.getLeaderboard('game-1', 10);
+console.log('Top players:', leaderboard);
+
+// Distribute rewards
+await cryptoPlay.distributeReward({
+  type: 'token',
+  amount: '100',
+  gameId: 'game-1'
+});
+```
+
+### NFT Marketplace
+
+```typescript
+// Create an NFT listing
+await cryptoPlay.createListing(1, '10.5');
+
+// Get active listings
+const listings = await cryptoPlay.getActiveListings();
+console.log('Active listings:', listings);
+
+// Make an offer
+await cryptoPlay.createOffer(1, '9.5');
+
+// Buy an NFT
+await cryptoPlay.buyNFT(1);
+
+// Get marketplace statistics
+const stats = await cryptoPlay.getMarketplaceStats();
+console.log(`Total volume: ${stats.totalVolume}`);
+```
+
+### Event Handling
+
+```typescript
+// Subscribe to NFT minting events
+const subscription = cryptoPlay.onNFTMinted((event) => {
+  console.log('New NFT minted:', event);
 });
 
-// Get game state
-const state = await game.getGameState();
-console.log(state);
+// Subscribe to token transfers
+cryptoPlay.onTokenTransfer((event) => {
+  console.log('Token transfer:', event);
+});
+
+// Get historical events
+const pastEvents = await cryptoPlay.getPastNFTMints(1000000, 1000100);
 ```
 
 ## API Reference
 
-### CryptoPlay
+### Core Classes
 
-The main SDK class that handles all game-related operations.
+- `CryptoPlay`: Main SDK class
+- `ContractManager`: Smart contract interaction
+- `EventManager`: Event handling and subscriptions
+- `GameManager`: Game mechanics and scoring
+- `MarketplaceManager`: NFT marketplace functionality
 
-#### Constructor
+### Key Interfaces
 
-```typescript
-new CryptoPlay(config: SDKConfig)
-```
-
-#### Methods
-
-- `initialize(): Promise<void>` - Connects wallet and deploys contracts
-- `mintNFT(metadata: NFTMetadata): Promise<TransactionResult>` - Mints a new NFT
-- `getGameState(): Promise<GameState>` - Gets current game state
-
-### CryptoPlayWallet
-
-Handles blockchain wallet operations.
-
-#### Constructor
-
-```typescript
-new CryptoPlayWallet(config: WalletConfig)
-```
-
-#### Methods
-
-- `connect(): Promise<void>` - Connects to the blockchain
-- `getBalance(): Promise<string>` - Gets wallet balance
-- `sendTransaction(to: string, value: string): Promise<string>` - Sends ETH
-- `getSigner(): ethers.Signer` - Gets the ethers signer
-- `getProvider(): ethers.providers.JsonRpcProvider` - Gets the provider
-
-## Types
-
-### WalletConfig
-
-```typescript
-interface WalletConfig {
-  privateKey: string;
-  provider: {
-    network: 'mainnet' | 'testnet';
-    apiKey: string;
-  };
-}
-```
-
-### GameConfig
-
-```typescript
-interface GameConfig {
-  name: string;
-  description: string;
-  token: {
-    name: string;
-    symbol: string;
-    initialSupply: string;
-  };
-  nft: {
-    name: string;
-    symbol: string;
-    baseURI: string;
-    maxSupply: number;
-  };
-}
-```
-
-### NFTMetadata
-
-```typescript
-interface NFTMetadata {
-  name: string;
-  description: string;
-  attributes: Array<{
-    trait_type: string;
-    value: string | number;
-  }>;
-  image?: string;
-}
-```
+- `SDKConfig`: SDK configuration
+- `GameConfig`: Game configuration
+- `NFTMetadata`: NFT metadata structure
+- `TransactionResult`: Transaction response
+- `GameState`: Current game state
+- `GameScore`: Player score data
+- `GameReward`: Reward structure
+- `Listing`: NFT listing data
+- `Offer`: NFT offer data
 
 ## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
@@ -171,4 +173,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-For support, email support@cryptoplay.com or join our Discord community. 
+For support, please open an issue in the GitHub repository or contact the CryptoPlay team.
+
+## Roadmap
+
+- [ ] Multi-chain support
+- [ ] Advanced game mechanics
+- [ ] Social features
+- [ ] Tournament system
+- [ ] Cross-game compatibility
+- [ ] Mobile SDK
+- [ ] Unity/Unreal Engine integration 
