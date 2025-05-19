@@ -1,5 +1,7 @@
 # CryptoPlay SDK
 
+![WhatsApp Image 2025-05-19 at 19 02 31](https://github.com/user-attachments/assets/73c069cb-eda0-4e1a-9477-72cf6683f582)
+
 A comprehensive SDK for blockchain gaming integration, providing seamless interaction with NFTs, tokens, and game mechanics.
 
 ## Features
